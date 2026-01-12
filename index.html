@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nammude Panchayat | Citizen Reporting</title>
+    
+    <!-- Using Google Fonts for Inter (Professional e-Gov look) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Navigation -->
+    <header class="main-header">
+        <div class="container header-content">
+            <div class="logo-area" onclick="app.router.navigate('home')">
+                <div class="logo-icon">🌴</div>
+                <div class="logo-text">
+                    <h1>Nammude Panchayat</h1>
+                    <p>Citizen Issue Reporting System</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode">🌙</button>
+                <button onclick="app.router.navigate('login')" class="btn-text">Official Login</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Application Container -->
+    <main id="app-container" class="container">
+        
+        <!-- VIEW: HOME -->
+        <section id="view-home" class="view active">
+            <div class="hero-section">
+                <h2>Welcome to Nammude Panchayat</h2>
+                <p>Report issues, track status, and help us build a better community.</p>
+                <div class="hero-actions">
+                    <button class="card-action" onclick="app.router.navigate('report')">
+                        <span class="icon">📢</span>
+                        <h3>Report Issue</h3>
+                        <p>Submit a new complaint regarding roads, water, or lights.</p>
+                    </button>
+                    <button class="card-action" onclick="app.router.navigate('track')">
+                        <span class="icon">🔍</span>
+                        <h3>Track Issue</h3>
+                        <p>Check the status of your previously reported complaints.</p>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: REPORT ISSUE -->
+        <section id="view-report" class="view hidden">
+            <div class="section-header">
+                <button class="btn-back" onclick="app.router.navigate('home')">← Back</button>
+                <h2>Report an Issue</h2>
+            </div>
+
+            <form id="report-form" onsubmit="app.controllers.report.submit(event)">
+                
+                <!-- Step 1: Category -->
+                <div class="form-group">
+                    <label>Select Category <span class="required">*</span></label>
+                    <div class="category-grid" id="category-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Title -->
+                <div class="form-group">
+                    <label for="issue-title">Issue Title <span class="required">*</span></label>
+                    <input type="text" id="issue-title" placeholder="Brief description (max 50 chars)" maxlength="50" required>
+                    <div class="char-count"><span id="title-count">0</span>/50</div>
+                </div>
+
+                <!-- Step 3: Description -->
+                <div class="form-group">
+                    <label for="issue-desc">Description <span class="required">*</span></label>
+                    <textarea id="issue-desc" placeholder="Provide details about the issue..." rows="4" required></textarea>
+                </div>
+
+                <!-- Step 4: Photos -->
+                <div class="form-group">
+                    <label>Upload Photos (Max 3)</label>
+                    <div class="file-upload-area">
+                        <input type="file" id="issue-photos" accept="image/*" multiple onchange="app.controllers.report.handleFiles(this)">
+                        <div class="upload-btn">📷 Choose Images</div>
+                        <div id="preview-area" class="preview-grid"></div>
+                        <div class="help-text" id="photo-count">0/3 images selected</div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Location -->
+                <div class="form-group">
+                    <label>Location <span class="required">*</span></label>
+                    <div class="tabs">
+                        <button type="button" class="tab-btn active" onclick="app.controllers.report.setLocationTab('auto')">Auto Detect</button>
+                        <button type="button" class="tab-btn" onclick="app.controllers.report.setLocationTab('manual')">Manual Entry</button>
+                    </div>
+                    
+                    <div id="loc-auto" class="tab-content active">
+                        <button type="button" class="btn-secondary" onclick="app.controllers.report.detectLocation()">📍 Detect My Location</button>
+                        <p id="detected-address" class="location-display">No location detected yet.</p>
+                        <input type="hidden" id="final-location" required>
+                    </div>
+
+                    <div id="loc-manual" class="tab-content hidden">
+                        <input type="text" id="manual-address" placeholder="Enter street, landmark, or Panchayat name" oninput="app.controllers.report.manualLocationInput(this)">
+                    </div>
+                </div>
+
+                <!-- Step 6: Urgency -->
+                <div class="form-group">
+                    <label>Urgency Level</label>
+                    <div class="urgency-selector">
+                        <label class="radio-card">
+                            <input type="radio" name="urgency" value="Normal" checked>
+                            <span class="radio-label">Normal</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="urgency" value="High">
+                            <span class="radio-label">High</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="urgency" value="Urgent">
+                            <span class="radio-label">🚨 Urgent</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Step 7: Contact -->
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="anon-check" onchange="app.controllers.report.toggleContact(this)">
+                        Submit Anonymously
+                    </label>
+                    <div id="contact-fields" class="mt-2">
+                        <input type="tel" id="contact-phone" placeholder="Phone Number (+91...)" pattern="[0-9]{10}">
+                        <input type="email" id="contact-email" placeholder="Email Address">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-block btn-lg">Submit Report</button>
+            </form>
+        </section>
+
+        <!-- VIEW: SUCCESS (Normally a modal, but can be a view for flow) -->
+        <section id="view-success" class="view hidden centered-view">
+            <div class="success-card">
+                <div class="success-icon">✅</div>
+                <h2>Report Submitted!</h2>
+                <p>Thank you for being a responsible citizen.</p>
+                
+                <div class="tracking-box">
+                    <p>Your Tracking ID:</p>
+                    <h1 id="success-tracking-id">PTH-2025-XXXX</h1>
+                    <button class="btn-sm" onclick="app.controllers.report.copyId()">📋 Copy</button>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="app.router.navigate('track', true)">Track Issue</button>
+                    <button class="btn-secondary" onclick="app.router.navigate('home')">Return Home</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: TRACK ISSUE -->
+        <section id="view-track" class="view hidden">
+            <div class="section-header">
+                <button class="btn-back" onclick="app.router.navigate('home')">← Back</button>
+                <h2>Track Your Issue</h2>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="track-input" placeholder="Enter Tracking ID (e.g., PTH-2025-001)">
+                <button class="btn-primary" onclick="app.controllers.track.search()">Track</button>
+            </div>
+
+            <div id="track-result" class="track-result hidden">
+                <!-- Populated by JS -->
+            </div>
+             <div id="track-error" class="error-msg hidden">
+                ❌ Tracking ID not found. Please check and try again.
+            </div>
+        </section>
+
+        <!-- VIEW: LOGIN -->
+        <section id="view-login" class="view hidden centered-view">
+            <div class="auth-card">
+                <h2>Official Login</h2>
+                <form onsubmit="app.controllers.auth.login(event)">
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="login-role">
+                            <option value="admin">Admin</option>
+                            <option value="officer">Officer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="login-user" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-pass" required>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Login</button>
+                </form>
+                <button class="btn-link mt-2" onclick="app.router.navigate('home')">Back to Public Home</button>
+            </div>
+        </section>
+
+        <!-- VIEW: DASHBOARD (ADMIN & OFFICER) -->
+        <section id="view-dashboard" class="view hidden">
+            <header class="dash-header">
+                <div>
+                    <h2 id="dash-title">Dashboard</h2>
+                    <p id="dash-role-badge" class="badge">Admin</p>
+                </div>
+                <button class="btn-secondary" onclick="app.controllers.auth.logout()">Logout</button>
+            </header>
+
+            <div class="stats-grid" id="dash-stats">
+              <!-- JS Populated -->
+            </div>
+
+            <!-- Dashboard Tabs -->
+             <div class="dash-controls">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="app.controllers.dashboard.switchTab('list')">📋 Reports List</button>
+                    <button class="tab-btn" onclick="app.controllers.dashboard.switchTab('map')">🗺️ Map View</button>
+                </div>
+                <button class="btn-sm btn-outline" id="export-btn" onclick="app.controllers.dashboard.exportData()">📥 Export Excel</button>
+             </div>
+
+            <div id="dash-tab-list" class="dash-tab active">
+                 <div class="filters">
+                    <select id="filter-status" onchange="app.controllers.dashboard.renderList()">
+                        <option value="all">All Statuses</option>
+                        <option value="Submitted">Submitted</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                    <select id="filter-category" onchange="app.controllers.dashboard.renderList()">
+                        <option value="all">All Categories</option>
+                        <!-- Populated -->
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Category</th>
+                                <th>Loc</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-table-body">
+                            <!-- Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="dash-tab-map" class="dash-tab hidden">
+                 <div class="map-placeholder">
+                    <h3>📍 Live Issue Map</h3>
+                    <p>Simulating map visualization...</p>
+                    <div id="dummy-map-viz"></div>
+                 </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="main-footer">
+        <p>© 2026 Nammude Panchayat. Government of Kerala.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
