@@ -15,7 +15,7 @@ const CATEGORIES = [
     { id: 'other', name: 'Other', icon: '📋' }
 ];
 
-const KERALA_LOCATIONS = [
+const KERALA_LOCATIONS = [                                                               //location - GPS detection
     "Thiruvananthapuram, Palayam", "Kochi, Edappally", "Kozhikode, Mananchira",
     "Thrissur, Round North", "Kollam, Chinnakada", "Alappuzha, Beach Rd",
     "Kannur, Fort Rd", "Kottayam, Thirunakkara"
@@ -30,25 +30,25 @@ const OFFICERS = [
 
 // --- STORAGE MANAGER ---
 
-class StorageManager {
+class StorageManager {               // manage browser localstorage operations
     constructor() {
-        this.key = 'np_issues';
+        this.key = 'np_issues';               //store issue
         if (!localStorage.getItem(this.key)) {
             localStorage.setItem(this.key, JSON.stringify([]));
         }
     }
 
-    getAll() {
+    getAll() {           // get all stored issues
         return JSON.parse(localStorage.getItem(this.key) || '[]');
     }
 
-    add(issue) {
+    add(issue) {      // add new issues
         const issues = this.getAll();
         issues.push(issue);
         localStorage.setItem(this.key, JSON.stringify(issues));
     }
 
-    updateStatus(id, newStatus) {
+    updateStatus(id, newStatus) {              //update status
         const issues = this.getAll();
         const idx = issues.findIndex(i => i.id === id);
         if (idx !== -1) {
@@ -60,7 +60,7 @@ class StorageManager {
         return false;
     }
 
-    getById(id) {
+    getById(id) {                //get complaint by ID
         return this.getAll().find(i => i.id === id);
     }
 }
@@ -74,7 +74,7 @@ class Auth {
         this.user = JSON.parse(localStorage.getItem('np_user') || 'null');
     }
 
-    login(e) {
+    login(e) {                  //login fun
         e.preventDefault();
         const role = document.getElementById('login-role').value;
         const user = document.getElementById('login-user').value;
@@ -92,7 +92,7 @@ class Auth {
         }
     }
 
-    logout() {
+    logout() {               
         this.user = null;
         localStorage.removeItem('np_user');
         app.router.navigate('home');
@@ -103,7 +103,7 @@ class Auth {
 
 const ReportController = {
     selectedCategory: null,
-    images: [],
+    images: [],                   //store uploaded img
 
     init: () => {
         const grid = document.getElementById('category-list');
@@ -120,13 +120,13 @@ const ReportController = {
         });
     },
 
-    selectCat: (id, el) => {
+    selectCat: (id, el) => {                    //select category
         ReportController.selectedCategory = id;
         document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
     },
 
-    setLocationTab: (mode) => {
+    setLocationTab: (mode) => {                //location selection
         document.querySelectorAll('.tab-content').forEach(d => d.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
@@ -427,3 +427,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
