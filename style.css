@@ -84,10 +84,42 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary); b
 
 /* Urgency */
 .urgency-selector { display: flex; gap: 1rem; }
+
 .radio-card { flex: 1; position: relative; }
+
 .radio-card input { position: absolute; opacity: 0; }
-.radio-card .radio-label { display: block; text-align: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: 0.2s; }
-.radio-card input:checked + .radio-label { background: var(--primary); color: white; border-color: var(--primary); }
+
+.radio-card .radio-label {
+    display: block;
+    text-align: center;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: 600;
+}
+
+/* NORMAL → GREEN */
+.radio-card input[value="Normal"]:checked + .radio-label {
+    background: #16a34a;
+    color: white;
+    border-color: #16a34a;
+}
+
+/* HIGH → ORANGE */
+.radio-card input[value="High"]:checked + .radio-label {
+    background: #f97316;
+    color: white;
+    border-color: #f97316;
+}
+
+/* URGENT → RED */
+.radio-card input[value="Urgent"]:checked + .radio-label {
+    background: #dc2626;
+    color: white;
+    border-color: #dc2626;
+}
 
 /* Success */
 .success-card { background: var(--bg-card); border-radius: var(--radius); padding: 3rem; text-align: center; box-shadow: var(--shadow); border-top: 8px solid var(--success); }
@@ -115,3 +147,4 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary); b
     .hero-actions { grid-template-columns: 1fr; }
     .stats-grid { grid-template-columns: 1fr; }
 }
+
