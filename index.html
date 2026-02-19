@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nammude Panchayat | Citizen Reporting</title>
-    
+
     <!-- Using Google Fonts for Inter (Professional e-Gov look) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <!-- Notification Container -->
@@ -29,14 +31,14 @@
             </div>
             <nav class="main-nav">
                 <button id="theme-toggle" class="btn-icon" title="Toggle Dark Mode">🌙</button>
-                <button onclick="app.router.navigate('login')" class="btn-text">Official Login</button>
+                <button onclick="app.router.navigate('login')" class="btn-text">Admin Login</button>
             </nav>
         </div>
     </header>
 
     <!-- Main Application Container -->
     <main id="app-container" class="container">
-        
+
         <!-- VIEW: HOME -->
         <section id="view-home" class="view active">
             <div class="hero-section">
@@ -65,7 +67,7 @@
             </div>
 
             <form id="report-form" onsubmit="app.controllers.report.submit(event)">
-                
+
                 <!-- Step 1: Category -->
                 <div class="form-group">
                     <label>Select Category <span class="required">*</span></label>
@@ -77,21 +79,24 @@
                 <!-- Step 2: Title -->
                 <div class="form-group">
                     <label for="issue-title">Issue Title <span class="required">*</span></label>
-                    <input type="text" id="issue-title" placeholder="Brief description (max 50 chars)" maxlength="50" required>
+                    <input type="text" id="issue-title" placeholder="Brief description (max 50 chars)" maxlength="50"
+                        required>
                     <div class="char-count"><span id="title-count">0</span>/50</div>
                 </div>
 
                 <!-- Step 3: Description -->
                 <div class="form-group">
                     <label for="issue-desc">Description <span class="required">*</span></label>
-                    <textarea id="issue-desc" placeholder="Provide details about the issue..." rows="4" required></textarea>
+                    <textarea id="issue-desc" placeholder="Provide details about the issue..." rows="4"
+                        required></textarea>
                 </div>
 
                 <!-- Step 4: Photos -->
                 <div class="form-group">
                     <label>Upload Photos (Max 3)</label>
                     <div class="file-upload-area">
-                        <input type="file" id="issue-photos" accept="image/*" multiple onchange="app.controllers.report.handleFiles(this)">
+                        <input type="file" id="issue-photos" accept="image/*" multiple
+                            onchange="app.controllers.report.handleFiles(this)">
                         <div class="upload-btn">📷 Choose Images</div>
                         <div id="preview-area" class="preview-grid"></div>
                         <div class="help-text" id="photo-count">0/3 images selected</div>
@@ -102,18 +107,22 @@
                 <div class="form-group">
                     <label>Location <span class="required">*</span></label>
                     <div class="tabs">
-                        <button type="button" class="tab-btn active" onclick="app.controllers.report.setLocationTab('auto')">Auto Detect</button>
-                        <button type="button" class="tab-btn" onclick="app.controllers.report.setLocationTab('manual')">Manual Entry</button>
+                        <button type="button" class="tab-btn active"
+                            onclick="app.controllers.report.setLocationTab('auto')">Auto Detect</button>
+                        <button type="button" class="tab-btn"
+                            onclick="app.controllers.report.setLocationTab('manual')">Manual Entry</button>
                     </div>
-                    
+
                     <div id="loc-auto" class="tab-content active">
-                        <button type="button" class="btn-secondary" onclick="app.controllers.report.detectLocation()">📍 Detect My Location</button>
+                        <button type="button" class="btn-secondary" onclick="app.controllers.report.detectLocation()">📍
+                            Detect My Location</button>
                         <p id="detected-address" class="location-display">No location detected yet.</p>
                         <input type="hidden" id="final-location" required>
                     </div>
 
                     <div id="loc-manual" class="tab-content hidden">
-                        <input type="text" id="manual-address" placeholder="Enter street, landmark, or Panchayat name" oninput="app.controllers.report.manualLocationInput(this)">
+                        <input type="text" id="manual-address" placeholder="Enter street, landmark, or Panchayat name"
+                            oninput="app.controllers.report.manualLocationInput(this)">
                     </div>
                 </div>
 
@@ -158,7 +167,7 @@
                 <div class="success-icon">✅</div>
                 <h2>Report Submitted!</h2>
                 <p>Thank you for being a responsible citizen.</p>
-                
+
                 <div class="tracking-box">
                     <p>Your Tracking ID:</p>
                     <h1 id="success-tracking-id">PTH-2025-XXXX</h1>
@@ -178,7 +187,7 @@
                 <button class="btn-back" onclick="app.router.navigate('home')">← Back</button>
                 <h2>Track Your Issue</h2>
             </div>
-            
+
             <div class="search-box">
                 <input type="text" id="track-input" placeholder="Enter Tracking ID (e.g., PTH-2025-001)">
                 <button class="btn-primary" onclick="app.controllers.track.search()">Track</button>
@@ -187,7 +196,7 @@
             <div id="track-result" class="track-result hidden">
                 <!-- Populated by JS -->
             </div>
-             <div id="track-error" class="error-msg hidden">
+            <div id="track-error" class="error-msg hidden">
                 ❌ Tracking ID not found. Please check and try again.
             </div>
         </section>
@@ -195,18 +204,12 @@
         <!-- VIEW: LOGIN -->
         <section id="view-login" class="view hidden centered-view">
             <div class="auth-card">
-                <h2>Official Login</h2>
+                <h2>Admin Login</h2>
                 <form onsubmit="app.controllers.auth.login(event)">
+                    <!-- Role Dropdown Removed -->
                     <div class="form-group">
-                        <label>Role</label>
-                        <select id="login-role">
-                            <option value="admin">Admin</option>
-                            <option value="officer">Officer</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="login-user" required>
+                        <label>Email</label>
+                        <input type="email" id="login-user" placeholder="admin@nammudepanchayat.com" required>
                     </div>
                     <div class="form-group">
                         <label>Password</label>
@@ -229,20 +232,22 @@
             </header>
 
             <div class="stats-grid" id="dash-stats">
-              <!-- JS Populated -->
+                <!-- JS Populated -->
             </div>
 
             <!-- Dashboard Tabs -->
-             <div class="dash-controls">
+            <div class="dash-controls">
                 <div class="tabs">
-                    <button class="tab-btn active" onclick="app.controllers.dashboard.switchTab('list')">📋 Reports List</button>
+                    <button class="tab-btn active" onclick="app.controllers.dashboard.switchTab('list')">📋 Reports
+                        List</button>
                     <button class="tab-btn" onclick="app.controllers.dashboard.switchTab('map')">🗺️ Map View</button>
                 </div>
-                <button class="btn-sm btn-outline" id="export-btn" onclick="app.controllers.dashboard.exportData()">📥 Export Excel</button>
-             </div>
+                <button class="btn-sm btn-outline" id="export-btn" onclick="app.controllers.dashboard.exportData()">📥
+                    Export Excel</button>
+            </div>
 
             <div id="dash-tab-list" class="dash-tab active">
-                 <div class="filters">
+                <div class="filters">
                     <select id="filter-status" onchange="app.controllers.dashboard.renderList()">
                         <option value="all">All Statuses</option>
                         <option value="Submitted">Submitted</option>
@@ -274,11 +279,11 @@
             </div>
 
             <div id="dash-tab-map" class="dash-tab hidden">
-                 <div class="map-placeholder">
+                <div class="map-placeholder">
                     <h3>📍 Live Issue Map</h3>
                     <p>Simulating map visualization...</p>
                     <div id="dummy-map-viz"></div>
-                 </div>
+                </div>
             </div>
 
         </section>
@@ -291,4 +296,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
