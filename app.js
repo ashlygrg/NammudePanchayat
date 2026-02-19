@@ -15,40 +15,35 @@ const CATEGORIES = [
     { id: 'other', name: 'Other', icon: '📋' }
 ];
 
-const KERALA_LOCATIONS = [                                                               //location - GPS detection
+const KERALA_LOCATIONS = [
     "Thiruvananthapuram, Palayam", "Kochi, Edappally", "Kozhikode, Mananchira",
     "Thrissur, Round North", "Kollam, Chinnakada", "Alappuzha, Beach Rd",
     "Kannur, Fort Rd", "Kottayam, Thirunakkara"
 ];
 
-const OFFICERS = [
-    { id: 'admin', pass: 'admin', role: 'admin', name: 'Super Admin' },
-    { id: 'officer_road', pass: '123', role: 'officer', cat: 'road', name: 'Road Officer' },
-    { id: 'officer_water', pass: '123', role: 'officer', cat: 'water', name: 'Water Officer' },
-    { id: 'officer_light', pass: '123', role: 'officer', cat: 'light', name: 'Light Officer' }
-];
+// Officers Data Removed - Admin Only System
 
 // --- STORAGE MANAGER ---
 
-class StorageManager {               // manage browser localstorage operations
+class StorageManager {
     constructor() {
-        this.key = 'np_issues';               //store issue
+        this.key = 'np_issues';
         if (!localStorage.getItem(this.key)) {
             localStorage.setItem(this.key, JSON.stringify([]));
         }
     }
 
-    getAll() {           // get all stored issues
+    getAll() {
         return JSON.parse(localStorage.getItem(this.key) || '[]');
     }
 
-    add(issue) {      // add new issues
+    add(issue) {
         const issues = this.getAll();
         issues.push(issue);
         localStorage.setItem(this.key, JSON.stringify(issues));
     }
 
-    updateStatus(id, newStatus) {              //update status
+    updateStatus(id, newStatus) {
         const issues = this.getAll();
         const idx = issues.findIndex(i => i.id === id);
         if (idx !== -1) {
@@ -60,7 +55,7 @@ class StorageManager {               // manage browser localstorage operations
         return false;
     }
 
-    getById(id) {                //get complaint by ID
+    getById(id) {
         return this.getAll().find(i => i.id === id);
     }
 }
@@ -74,25 +69,24 @@ class Auth {
         this.user = JSON.parse(localStorage.getItem('np_user') || 'null');
     }
 
-    login(e) {                  //login fun
+    login(e) {
         e.preventDefault();
-        const role = document.getElementById('login-role').value;
+        // Removed Role Selection
         const user = document.getElementById('login-user').value;
         const pass = document.getElementById('login-pass').value;
 
-        // Simple mock auth
-        const account = OFFICERS.find(o => o.id === user && o.pass === pass && o.role === role);
-
-        if (account) {
+        // Static Admin Auth
+        if (user === 'admin@nammudepanchayat.com' && pass === 'admin@123') {
+            const account = { role: 'admin', name: 'Administrator' };
             this.user = account;
             localStorage.setItem('np_user', JSON.stringify(account));
             app.router.navigate('dashboard');
         } else {
-            alert('Invalid credentials!');
+            alert('Invalid admin credentials!');
         }
     }
 
-    logout() {               
+    logout() {
         this.user = null;
         localStorage.removeItem('np_user');
         app.router.navigate('home');
@@ -103,7 +97,7 @@ class Auth {
 
 const ReportController = {
     selectedCategory: null,
-    images: [],                   //store uploaded img
+    images: [],
 
     init: () => {
         const grid = document.getElementById('category-list');
@@ -120,13 +114,13 @@ const ReportController = {
         });
     },
 
-    selectCat: (id, el) => {                    //select category
+    selectCat: (id, el) => {
         ReportController.selectedCategory = id;
         document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
     },
 
-    setLocationTab: (mode) => {                //location selection
+    setLocationTab: (mode) => {
         document.querySelectorAll('.tab-content').forEach(d => d.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
@@ -280,7 +274,7 @@ const DashboardController = {
     load: () => {
         const user = app.auth.user;
         if (!user) { app.router.navigate('login'); return; }
-        document.getElementById('dash-role-badge').innerText = user.role.toUpperCase() + (user.cat ? ` (${user.cat})` : '');
+        document.getElementById('dash-role-badge').innerText = 'Administrator';
 
         DashboardController.renderStats();
         DashboardController.renderList();
@@ -313,10 +307,7 @@ const DashboardController = {
         const statusFilter = document.getElementById('filter-status').value;
         let issues = db.getAll();
 
-        // 1. Filter by Officer Role
-        if (user.role === 'officer') {
-            issues = issues.filter(i => i.category === user.cat);
-        }
+        // 1. Filter by Officer Role - REMOVED (Admin sees all)
 
         // 2. Filter by dropdown
         if (statusFilter !== 'all') {
@@ -427,4 +418,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
