@@ -1,422 +1,313 @@
-/**
- * Nammude Panchayat - Core Logic
- */
-
-// --- DATA MODELS ---
+// ================= DATA =================
 
 const CATEGORIES = [
-    { id: 'road', name: 'Broken Road / Pothole', icon: '🛣️' },
-    { id: 'light', name: 'Streetlight Issue', icon: '💡' },
-    { id: 'water', name: 'Water Leak / Pipe', icon: '💧' },
-    { id: 'drain', name: 'Drainage / Flood', icon: '🌊' },
-    { id: 'waste', name: 'Garbage / Waste', icon: '🗑️' },
-    { id: 'power', name: 'Electricity', icon: '⚡' },
-    { id: 'prop', name: 'Public Damage', icon: '🏛️' },
-    { id: 'other', name: 'Other', icon: '📋' }
+ { id:'road', name:'Broken Road', icon:'🛣️' },
+ { id:'light', name:'Streetlight', icon:'💡' },
+ { id:'water', name:'Water Leak', icon:'💧' },
+ { id:'waste', name:'Garbage', icon:'🗑️' },
+ { id:'drain', name:'Drainage', icon:'🌊' },
+ { id:'other', name:'Other', icon:'📋' }
 ];
 
-const KERALA_LOCATIONS = [
-    "Thiruvananthapuram, Palayam", "Kochi, Edappally", "Kozhikode, Mananchira",
-    "Thrissur, Round North", "Kollam, Chinnakada", "Alappuzha, Beach Rd",
-    "Kannur, Fort Rd", "Kottayam, Thirunakkara"
-];
+// ================= STORAGE =================
 
-// Officers Data Removed - Admin Only System
-
-// --- STORAGE MANAGER ---
-
-class StorageManager {
-    constructor() {
-        this.key = 'np_issues';
-        if (!localStorage.getItem(this.key)) {
-            localStorage.setItem(this.key, JSON.stringify([]));
-        }
-    }
-
-    getAll() {
-        return JSON.parse(localStorage.getItem(this.key) || '[]');
-    }
-
-    add(issue) {
-        const issues = this.getAll();
-        issues.push(issue);
-        localStorage.setItem(this.key, JSON.stringify(issues));
-    }
-
-    updateStatus(id, newStatus) {
-        const issues = this.getAll();
-        const idx = issues.findIndex(i => i.id === id);
-        if (idx !== -1) {
-            issues[idx].status = newStatus;
-            issues[idx].statusHistory.push({ status: newStatus, date: new Date().toISOString() });
-            localStorage.setItem(this.key, JSON.stringify(issues));
-            return true;
-        }
-        return false;
-    }
-
-    getById(id) {
-        return this.getAll().find(i => i.id === id);
-    }
+class StorageManager{
+ constructor(){
+   this.key='np_issues';
+   if(!localStorage.getItem(this.key)){
+     localStorage.setItem(this.key,JSON.stringify([]));
+   }
+ }
+ getAll(){ return JSON.parse(localStorage.getItem(this.key)||'[]'); }
+ add(issue){
+   const issues=this.getAll();
+   issues.push(issue);
+   localStorage.setItem(this.key,JSON.stringify(issues));
+ }
+ getById(id){ return this.getAll().find(i=>i.id===id); }
+ updateStatus(id,newStatus){
+   const issues=this.getAll();
+   const item=issues.find(i=>i.id===id);
+   if(item){
+     item.status=newStatus;
+     item.history.push({status:newStatus,date:new Date().toISOString()});
+     localStorage.setItem(this.key,JSON.stringify(issues));
+   }
+ }
 }
 
-const db = new StorageManager();
+const db=new StorageManager();
 
-// --- AUTHENTICATION ---
+// ================= AUTH =================
 
-class Auth {
-    constructor() {
-        this.user = JSON.parse(localStorage.getItem('np_user') || 'null');
-    }
+class Auth{
+ constructor(){ this.user=null; }
 
-    login(e) {
-        e.preventDefault();
-        // Removed Role Selection
-        const user = document.getElementById('login-user').value;
-        const pass = document.getElementById('login-pass').value;
+ login(e){
+   e.preventDefault();
+   const u=document.getElementById('login-user').value;
+   const p=document.getElementById('login-pass').value;
 
-        // Static Admin Auth
-        if (user === 'admin@nammudepanchayat.com' && pass === 'admin@123') {
-            const account = { role: 'admin', name: 'Administrator' };
-            this.user = account;
-            localStorage.setItem('np_user', JSON.stringify(account));
-            app.router.navigate('dashboard');
-        } else {
-            alert('Invalid admin credentials!');
-        }
-    }
+   if(u==='admin@nammudepanchayat.com' && p==='admin@123'){
+     this.user={role:'admin'};
+     app.router.navigate('dashboard');
+   }else alert('Invalid admin login');
+ }
 
-    logout() {
-        this.user = null;
-        localStorage.removeItem('np_user');
-        app.router.navigate('home');
-    }
+ logout(){
+   this.user=null;
+   app.router.navigate('home');
+ }
 }
 
-// --- CONTROLLERS ---
+// ================= REPORT CONTROLLER =================
 
-const ReportController = {
-    selectedCategory: null,
-    images: [],
+const ReportController={
+ selectedCategory:null,
+ images:[],
 
-    init: () => {
-        const grid = document.getElementById('category-list');
-        grid.innerHTML = CATEGORIES.map(c => `
-            <div class="cat-card" onclick="app.controllers.report.selectCat('${c.id}', this)">
-                <span class="cat-icon">${c.icon}</span>
-                <span>${c.name}</span>
-            </div>
-        `).join('');
+ init(){
+   const grid=document.getElementById('category-list');
+   grid.innerHTML=CATEGORIES.map(c=>`
+     <div class="cat-card" onclick="app.controllers.report.selectCat('${c.id}',this)">
+       <span class="cat-icon">${c.icon}</span>
+       <span>${c.name}</span>
+     </div>
+   `).join('');
 
-        // Char counter
-        document.getElementById('issue-title').addEventListener('input', (e) => {
-            document.getElementById('title-count').innerText = e.target.value.length;
-        });
-    },
+   document.getElementById('issue-title').addEventListener('input',e=>{
+     document.getElementById('title-count').innerText=e.target.value.length;
+   });
+ },
 
-    selectCat: (id, el) => {
-        ReportController.selectedCategory = id;
-        document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
-        el.classList.add('selected');
-    },
+ selectCat(id,el){
+   this.selectedCategory=id;
+   document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
+   el.classList.add('selected');
+ },
 
-    setLocationTab: (mode) => {
-        document.querySelectorAll('.tab-content').forEach(d => d.classList.add('hidden'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+ // ===== GPS + MAP =====
+ detectLocation(){
+   if(!navigator.geolocation){ alert('GPS not supported'); return; }
 
-        document.getElementById(`loc-${mode}`).classList.remove('hidden');
-        // Find the button that triggered this? Simplified selector:
-        // Actually, just toggle classes based on click is safer in pure JS
-        const btns = document.querySelectorAll('.tabs .tab-btn');
-        if (mode === 'auto') {
-            btns[0].classList.add('active');
-            btns[1].classList.remove('active');
-        } else {
-            btns[1].classList.add('active');
-            btns[0].classList.remove('active');
-        }
-    },
+   const btn=document.querySelector('#view-report .btn-secondary');
+   btn.innerText="Detecting...";
 
-    detectLocation: () => {
-        const btn = document.querySelector('#loc-auto button');
-        btn.innerText = "🛰️ Locating...";
+   navigator.geolocation.getCurrentPosition(pos=>{
+     const lat=pos.coords.latitude;
+     const lng=pos.coords.longitude;
 
-        setTimeout(() => {
-            // Mock Location
-            const randLoc = KERALA_LOCATIONS[Math.floor(Math.random() * KERALA_LOCATIONS.length)];
-            const lat = (8 + Math.random() * 2).toFixed(4);
-            const lng = (76 + Math.random() * 1).toFixed(4);
+     const geocoder=new google.maps.Geocoder();
 
-            document.getElementById('detected-address').innerText = `✅ Found: ${randLoc} (${lat}, ${lng})`;
-            document.getElementById('final-location').value = randLoc;
-            btn.innerText = "📍 Detect Again";
-        }, 1500);
-    },
+     geocoder.geocode({location:{lat,lng}},(res,status)=>{
+       let address=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    manualLocationInput: (el) => {
-        document.getElementById('final-location').value = el.value;
-    },
+       if(status==='OK' && res[0]){
+         address=res[0].formatted_address;
+       }
 
-    handleFiles: (input) => {
-        const files = Array.from(input.files).slice(0, 3);
-        ReportController.images = [];
-        const preview = document.getElementById('preview-area');
-        preview.innerHTML = '';
-        document.getElementById('photo-count').innerText = `${files.length}/3 images selected`;
+       document.getElementById('detected-address').innerText="📍 "+address;
+       document.getElementById('final-location').value=address;
 
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                ReportController.images.push(e.target.result); // Base64
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.width = '60px'; img.style.height = '60px'; img.style.objectFit = 'cover';
-                img.style.borderRadius = '4px';
-                preview.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        });
-    },
+       const map=new google.maps.Map(document.getElementById("map"),{
+         center:{lat,lng},
+         zoom:15
+       });
 
-    toggleContact: (el) => {
-        const fields = document.getElementById('contact-fields');
-        fields.style.display = el.checked ? 'none' : 'block';
-    },
+       new google.maps.Marker({position:{lat,lng},map});
 
-    submit: (e) => {
-        e.preventDefault();
-        if (!ReportController.selectedCategory) { alert('Please select a category'); return; }
-        if (!document.getElementById('final-location').value) { alert('Please set a location'); return; }
+       btn.innerText="Detect Again";
+     });
 
-        const issue = {
-            id: 'PTH-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000),
-            category: ReportController.selectedCategory,
-            title: document.getElementById('issue-title').value,
-            desc: document.getElementById('issue-desc').value,
-            images: ReportController.images,
-            location: document.getElementById('final-location').value,
-            urgency: document.querySelector('input[name="urgency"]:checked').value,
-            isAnonymous: document.getElementById('anon-check').checked,
-            contact: {
-                phone: document.getElementById('contact-phone').value,
-                email: document.getElementById('contact-email').value
-            },
-            status: 'Submitted',
-            date: new Date().toLocaleDateString(),
-            statusHistory: [{ status: 'Submitted', date: new Date().toISOString() }]
-        };
+   },()=>{
+     alert('Location permission denied');
+     btn.innerText="Detect My Location";
+   });
+ },
 
-        db.add(issue);
-        document.getElementById('success-tracking-id').innerText = issue.id;
-        app.router.navigate('success');
-        e.target.reset();
-        ReportController.images = [];
-        ReportController.selectedCategory = null;
-        document.getElementById('preview-area').innerHTML = '';
-        document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
-    },
+ // ===== IMAGE HANDLING =====
+ handleFiles(input){
+   const files=[...input.files].slice(0,3);
+   this.images=[];
+   const preview=document.getElementById('preview-area');
+   preview.innerHTML='';
 
-    copyId: () => {
-        const text = document.getElementById('success-tracking-id').innerText;
-        navigator.clipboard.writeText(text);
-        alert('Copied ID: ' + text);
-    }
+   files.forEach(file=>{
+     if(file.size>2*1024*1024){
+       alert('Max image size 2MB');
+       return;
+     }
+     const reader=new FileReader();
+     reader.onload=e=>{
+       this.images.push(e.target.result);
+       const img=document.createElement('img');
+       img.src=e.target.result;
+       img.style.width='60px';
+       img.style.height='60px';
+       img.style.objectFit='cover';
+       img.style.borderRadius='6px';
+       preview.appendChild(img);
+     };
+     reader.readAsDataURL(file);
+   });
+
+   document.getElementById('photo-count').innerText=this.images.length+"/3 images";
+ },
+
+ // ===== SUBMIT =====
+ submit(e){
+   e.preventDefault();
+
+   const loc=document.getElementById('final-location').value.trim();
+   if(!this.selectedCategory){ alert('Select category'); return; }
+   if(!loc){ alert('Detect location'); return; }
+
+   const issue={
+     id:'PTH-'+Date.now().toString().slice(-6),
+     category:this.selectedCategory,
+     title:document.getElementById('issue-title').value,
+     desc:document.getElementById('issue-desc').value,
+     images:this.images,
+     location:loc,
+     status:'Submitted',
+     date:new Date().toLocaleDateString(),
+     history:[{status:'Submitted',date:new Date().toISOString()}]
+   };
+
+   db.add(issue);
+   document.getElementById('success-tracking-id').innerText=issue.id;
+
+   app.router.navigate('success');
+
+   e.target.reset();
+   this.images=[];
+   this.selectedCategory=null;
+   document.getElementById('preview-area').innerHTML='';
+   document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
+ }
 };
 
-const TrackController = {
-    search: () => {
-        const id = document.getElementById('track-input').value.trim();
-        const issue = db.getById(id);
-        const resDiv = document.getElementById('track-result');
-        const errDiv = document.getElementById('track-error');
+// ================= TRACK =================
 
-        if (!issue) {
-            resDiv.classList.add('hidden');
-            errDiv.classList.remove('hidden');
-            return;
-        }
+const TrackController={
+ search(){
+   const id=document.getElementById('track-input').value.trim();
+   const issue=db.getById(id);
 
-        errDiv.classList.add('hidden');
-        resDiv.classList.remove('hidden');
+   if(!issue){
+     document.getElementById('track-error').classList.remove('hidden');
+     return;
+   }
 
-        const catName = CATEGORIES.find(c => c.id === issue.category)?.name || issue.category;
+   document.getElementById('track-error').classList.add('hidden');
+   document.getElementById('track-result').classList.remove('hidden');
 
-        resDiv.innerHTML = `
-            <div class="card-action" style="text-align: left; cursor: default; margin-top: 1rem;">
-                <div style="display:flex; justify-content:space-between;">
-                   <span class="badge badge-${issue.status.replace(' ', '')}">${issue.status}</span>
-                   <small>${issue.date}</small>
-                </div>
-                <h3 style="margin: 0.5rem 0;">${issue.title}</h3>
-                <p><strong>Category:</strong> ${catName}</p>
-                <p><strong>Location:</strong> ${issue.location}</p>
-                <p style="margin-top: 0.5rem; color: var(--text-muted);">${issue.desc}</p>
-                <div style="margin-top: 1rem; display:flex; gap: 0.5rem;">
-                   ${issue.images.map(src => `<img src="${src}" style="width:50px; height:50px; border-radius:4px;">`).join('')}
-                </div>
-                <div class="timeline" style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                    <h4>Tracking Timeline</h4>
-                    ${issue.statusHistory.map(h => `
-                        <div class="timeline-item">
-                            <small>${new Date(h.date).toLocaleDateString()}</small>
-                            <strong>${h.status}</strong>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
+   document.getElementById('track-result').innerHTML=`
+     <div class="card-action" style="text-align:left">
+       <h3>${issue.title}</h3>
+       <p><strong>Location:</strong> ${issue.location}</p>
+       <p><strong>Status:</strong> ${issue.status}</p>
+       <p>${issue.desc}</p>
+     </div>
+   `;
+ }
 };
 
-const DashboardController = {
-    currentUser: null,
+// ================= DASHBOARD =================
 
-    load: () => {
-        const user = app.auth.user;
-        if (!user) { app.router.navigate('login'); return; }
-        document.getElementById('dash-role-badge').innerText = 'Administrator';
+const DashboardController={
+ load(){
+   if(!app.auth.user){ app.router.navigate('login'); return; }
+   this.renderList();
+ },
 
-        DashboardController.renderStats();
-        DashboardController.renderList();
-    },
+ renderList(){
+   const statusFilter=document.getElementById('filter-status').value;
+   const catFilter=document.getElementById('filter-category').value;
 
-    renderStats: () => {
-        const issues = db.getAll();
-        const total = issues.length;
-        const pending = issues.filter(i => i.status === 'Submitted').length;
-        const resolved = issues.filter(i => i.status === 'Resolved').length;
+   let issues=db.getAll();
 
-        document.getElementById('dash-stats').innerHTML = `
-            <div class="stat-card">
-                <div class="stat-number">${total}</div>
-                <div class="stat-label">Total Reports</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" style="color: var(--warning);">${pending}</div>
-                <div class="stat-label">Pending</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" style="color: var(--success);">${resolved}</div>
-                <div class="stat-label">Resolved</div>
-            </div>
-        `;
-    },
+   if(statusFilter!=='all')
+     issues=issues.filter(i=>i.status===statusFilter);
 
-    renderList: () => {
-        const user = app.auth.user;
-        const statusFilter = document.getElementById('filter-status').value;
-        let issues = db.getAll();
+   if(catFilter!=='all')
+     issues=issues.filter(i=>i.category===catFilter);
 
-        // 1. Filter by Officer Role - REMOVED (Admin sees all)
+   document.getElementById('dash-table-body').innerHTML=issues.map(i=>`
+     <tr>
+       <td>${i.id}</td>
+       <td>${CATEGORIES.find(c=>c.id===i.category)?.name}</td>
+       <td>${i.location}</td>
+       <td>${i.status}</td>
+       <td>
+       ${i.status!=='Resolved'
+        ?`<button class="btn-primary" onclick="app.controllers.dashboard.resolve('${i.id}')">Resolve</button>`
+        :'Done'}
+       </td>
+     </tr>
+   `).join('');
+ },
 
-        // 2. Filter by dropdown
-        if (statusFilter !== 'all') {
-            issues = issues.filter(i => i.status === statusFilter);
-        }
-
-        const tbody = document.getElementById('dash-table-body');
-        tbody.innerHTML = issues.map(i => `
-            <tr>
-                <td>${i.id}</td>
-                <td>${CATEGORIES.find(c => c.id === i.category)?.name || i.category}</td>
-                <td>${i.location}</td>
-                <td>${i.date}</td>
-                <td><span class="badge badge-${i.status.replace(' ', '')}">${i.status}</span></td>
-                <td>
-                    ${i.status !== 'Resolved' ?
-                `<button class="btn-sm btn-primary" onclick="app.controllers.dashboard.resolve('${i.id}')">Resolve</button>` :
-                '<span style="color:var(--success)">Done</span>'}
-                </td>
-            </tr>
-        `).join('');
-    },
-
-    resolve: (id) => {
-        if (confirm('Mark this issue as Resolved?')) {
-            db.updateStatus(id, 'Resolved');
-            DashboardController.renderList();
-            DashboardController.renderStats();
-        }
-    },
-
-    switchTab: (tabId) => {
-        document.querySelectorAll('.dash-tab').forEach(d => d.classList.add('hidden'));
-        document.getElementById(`dash-tab-${tabId}`).classList.remove('hidden');
-
-        // Update buttons
-        const btnIndex = tabId === 'list' ? 0 : 1;
-        const btns = document.querySelectorAll('.dash-controls .tab-btn');
-        btns.forEach(b => b.classList.remove('active'));
-        if (btns[btnIndex]) btns[btnIndex].classList.add('active');
-    },
-
-    exportData: () => {
-        alert('Data export simulation: Downloading report.csv...');
-    }
+ resolve(id){
+   db.updateStatus(id,'Resolved');
+   this.renderList();
+ }
 };
 
-// --- ROUTER ---
+// ================= ROUTER =================
 
-const authService = new Auth();
+const authService=new Auth();
 
-const app = {
-    auth: authService,
-    controllers: {
-        report: ReportController,
-        track: TrackController,
-        auth: authService,
-        dashboard: DashboardController
-    },
-    router: {
-        navigate: (viewId, skipCheck = false) => {
-            // Guard clauses
-            if (viewId === 'dashboard' && !app.auth.user) {
-                viewId = 'login';
-            }
+const app={
+ auth:authService,
+ controllers:{
+   report:ReportController,
+   track:TrackController,
+   auth:authService,
+   dashboard:DashboardController
+ },
+ router:{
+   navigate(view){
+     document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+     document.getElementById('view-'+view).classList.remove('hidden');
 
-            // Hide all
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+     if(view==='report') ReportController.init();
+     if(view==='dashboard') DashboardController.load();
 
-            // Show Target
-            const target = document.getElementById(`view-${viewId}`);
-            if (target) {
-                target.classList.remove('hidden');
-
-                // Initialize specific views
-                if (viewId === 'report') ReportController.init();
-                if (viewId === 'dashboard') DashboardController.load();
-                window.scrollTo(0, 0);
-            }
-        }
-    }
+     window.scrollTo(0,0);
+   }
+ }
 };
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is already logged in? 
-    // For now simple routing
-    app.router.navigate('home');
+// ================= INIT =================
 
-    // Theme toggle
-    const themeBtn = document.getElementById('theme-toggle');
-    themeBtn.addEventListener('click', () => {
-        if (document.documentElement.getAttribute('data-theme') === 'dark') {
-            document.documentElement.removeAttribute('data-theme');
-            themeBtn.innerText = '🌙';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            themeBtn.innerText = '☀️';
-        }
-    });
+document.addEventListener('DOMContentLoaded',()=>{
 
-    // Populate Category Filter in Dashboard
-    const catSelect = document.getElementById('filter-category');
-    if (catSelect) {
-        CATEGORIES.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.innerText = c.name;
-            catSelect.appendChild(opt);
-        });
-    }
+ app.router.navigate('home');
+
+ // populate dashboard category filter
+ const sel=document.getElementById('filter-category');
+ if(sel){
+   CATEGORIES.forEach(c=>{
+     const o=document.createElement('option');
+     o.value=c.id;
+     o.innerText=c.name;
+     sel.appendChild(o);
+   });
+ }
+
+ // theme toggle
+ const themeBtn=document.getElementById('theme-toggle');
+ if(themeBtn){
+   themeBtn.addEventListener('click',()=>{
+     if(document.documentElement.getAttribute('data-theme')==='dark'){
+       document.documentElement.removeAttribute('data-theme');
+       themeBtn.innerText='🌙';
+     }else{
+       document.documentElement.setAttribute('data-theme','dark');
+       themeBtn.innerText='☀️';
+     }
+   });
+ }
+
 });
