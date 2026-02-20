@@ -357,12 +357,14 @@ const DashboardController = {
 
 // --- ROUTER ---
 
+const authService = new Auth();
+
 const app = {
-    auth: new Auth(),
+    auth: authService,
     controllers: {
         report: ReportController,
         track: TrackController,
-        auth: new Auth(), // Alias
+        auth: authService,
         dashboard: DashboardController
     },
     router: {
