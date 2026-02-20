@@ -1,15 +1,34 @@
-// ================= DATA =================
+// ===================== CONFIG =====================
+
+// Panchayat department routing
+const DEPARTMENTS = {
+ road:"Public Works Department",
+ light:"KSEB",
+ water:"Water Authority",
+ waste:"Sanitation Wing",
+ drain:"Flood Control",
+ other:"General Administration"
+};
+
+// Priority auto detection
+function getPriority(category){
+ if(category==="drain" || category==="light") return "High";
+ if(category==="water") return "Urgent";
+ return "Normal";
+}
+
+// ===================== DATA =====================
 
 const CATEGORIES = [
  { id:'road', name:'Broken Road', icon:'🛣️' },
  { id:'light', name:'Streetlight', icon:'💡' },
  { id:'water', name:'Water Leak', icon:'💧' },
  { id:'waste', name:'Garbage', icon:'🗑️' },
- { id:'drain', name:'Drainage', icon:'🌊' },
+ { id:'drain', name:'Drainage/Flood', icon:'🌊' },
  { id:'other', name:'Other', icon:'📋' }
 ];
 
-// ================= STORAGE =================
+// ===================== STORAGE =====================
 
 class StorageManager{
  constructor(){
@@ -30,7 +49,10 @@ class StorageManager{
    const item=issues.find(i=>i.id===id);
    if(item){
      item.status=newStatus;
-     item.history.push({status:newStatus,date:new Date().toISOString()});
+     item.history.push({
+       status:newStatus,
+       date:new Date().toISOString()
+     });
      localStorage.setItem(this.key,JSON.stringify(issues));
    }
  }
@@ -38,94 +60,104 @@ class StorageManager{
 
 const db=new StorageManager();
 
-// ================= AUTH =================
+// ===================== TOAST NOTIFICATION =====================
+
+function showToast(msg){
+ let t=document.createElement("div");
+ t.innerText=msg;
+ t.style.position="fixed";
+ t.style.bottom="20px";
+ t.style.right="20px";
+ t.style.background="#007a5e";
+ t.style.color="white";
+ t.style.padding="12px 18px";
+ t.style.borderRadius="10px";
+ t.style.boxShadow="0 8px 20px rgba(0,0,0,.2)";
+ document.body.appendChild(t);
+ setTimeout(()=>t.remove(),3000);
+}
+
+// ===================== AUTH =====================
 
 class Auth{
  constructor(){ this.user=null; }
-
  login(e){
    e.preventDefault();
-   const u=document.getElementById('login-user').value;
-   const p=document.getElementById('login-pass').value;
-
+   let u=login-user.value;
+   let p=login-pass.value;
    if(u==='admin@nammudepanchayat.com' && p==='admin@123'){
      this.user={role:'admin'};
+     showToast("Admin login successful");
      app.router.navigate('dashboard');
-   }else alert('Invalid admin login');
+   }else alert("Invalid login");
  }
-
  logout(){
    this.user=null;
+   showToast("Logged out");
    app.router.navigate('home');
  }
 }
 
-// ================= REPORT CONTROLLER =================
+// ===================== REPORT CONTROLLER =====================
 
 const ReportController={
  selectedCategory:null,
  images:[],
+ lat:null,
+ lng:null,
 
  init(){
    const grid=document.getElementById('category-list');
    grid.innerHTML=CATEGORIES.map(c=>`
-     <div class="cat-card" onclick="app.controllers.report.selectCat('${c.id}',this)">
-       <span class="cat-icon">${c.icon}</span>
-       <span>${c.name}</span>
-     </div>
-   `).join('');
-
-   document.getElementById('issue-title').addEventListener('input',e=>{
-     document.getElementById('title-count').innerText=e.target.value.length;
-   });
+    <div class="cat-card"
+      onclick="app.controllers.report.selectCat('${c.id}',this)">
+      <span class="cat-icon">${c.icon}</span>
+      <span>${c.name}</span>
+    </div>`).join('');
  },
 
  selectCat(id,el){
    this.selectedCategory=id;
-   document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
+   document.querySelectorAll('.cat-card')
+     .forEach(c=>c.classList.remove('selected'));
    el.classList.add('selected');
  },
 
- // ===== GPS + MAP =====
+ // ========= REAL GPS + FREE ADDRESS API =========
  detectLocation(){
-   if(!navigator.geolocation){ alert('GPS not supported'); return; }
 
-   const btn=document.querySelector('#view-report .btn-secondary');
-   btn.innerText="Detecting...";
+   if(!navigator.geolocation){
+     alert("GPS not supported"); return;
+   }
 
-   navigator.geolocation.getCurrentPosition(pos=>{
-     const lat=pos.coords.latitude;
-     const lng=pos.coords.longitude;
+   showToast("Detecting location...");
 
-     const geocoder=new google.maps.Geocoder();
+   navigator.geolocation.getCurrentPosition(async pos=>{
+     this.lat=pos.coords.latitude;
+     this.lng=pos.coords.longitude;
 
-     geocoder.geocode({location:{lat,lng}},(res,status)=>{
-       let address=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+     // reverse geocode (FREE OpenStreetMap)
+     const url=`https://nominatim.openstreetmap.org/reverse?format=json&lat=${this.lat}&lon=${this.lng}`;
+     const res=await fetch(url);
+     const data=await res.json();
 
-       if(status==='OK' && res[0]){
-         address=res[0].formatted_address;
-       }
+     const address=data.display_name || `${this.lat}, ${this.lng}`;
 
-       document.getElementById('detected-address').innerText="📍 "+address;
-       document.getElementById('final-location').value=address;
+     document.getElementById('detected-address').innerText="📍 "+address;
+     document.getElementById('final-location').value=address;
 
-       const map=new google.maps.Map(document.getElementById("map"),{
-         center:{lat,lng},
-         zoom:15
-       });
+     // map preview (OpenStreetMap embed)
+     document.getElementById("map").innerHTML=
+     `<iframe width="100%" height="100%" style="border-radius:12px"
+       src="https://www.openstreetmap.org/export/embed.html?bbox=${this.lng-0.01}%2C${this.lat-0.01}%2C${this.lng+0.01}%2C${this.lat+0.01}&layer=mapnik&marker=${this.lat}%2C${this.lng}">
+     </iframe>`;
 
-       new google.maps.Marker({position:{lat,lng},map});
+     showToast("Location detected");
 
-       btn.innerText="Detect Again";
-     });
-
-   },()=>{
-     alert('Location permission denied');
-     btn.innerText="Detect My Location";
-   });
+   },()=>alert("Location permission denied"));
  },
 
- // ===== IMAGE HANDLING =====
+ // ========= IMAGE =========
  handleFiles(input){
    const files=[...input.files].slice(0,3);
    this.images=[];
@@ -134,127 +166,114 @@ const ReportController={
 
    files.forEach(file=>{
      if(file.size>2*1024*1024){
-       alert('Max image size 2MB');
-       return;
+       alert("Image max 2MB"); return;
      }
-     const reader=new FileReader();
-     reader.onload=e=>{
+     const r=new FileReader();
+     r.onload=e=>{
        this.images.push(e.target.result);
-       const img=document.createElement('img');
-       img.src=e.target.result;
-       img.style.width='60px';
-       img.style.height='60px';
-       img.style.objectFit='cover';
-       img.style.borderRadius='6px';
-       preview.appendChild(img);
+       preview.innerHTML+=`<img src="${e.target.result}"
+         style="width:60px;height:60px;border-radius:6px;">`;
      };
-     reader.readAsDataURL(file);
+     r.readAsDataURL(file);
    });
-
-   document.getElementById('photo-count').innerText=this.images.length+"/3 images";
  },
 
- // ===== SUBMIT =====
+ // ========= SUBMIT =========
  submit(e){
    e.preventDefault();
 
-   const loc=document.getElementById('final-location').value.trim();
-   if(!this.selectedCategory){ alert('Select category'); return; }
-   if(!loc){ alert('Detect location'); return; }
+   const loc=final-location.value.trim();
+   if(!this.selectedCategory){alert("Select category");return;}
+   if(!loc){alert("Detect location");return;}
 
    const issue={
-     id:'PTH-'+Date.now().toString().slice(-6),
+     id:"PTH-"+Date.now().toString().slice(-6),
      category:this.selectedCategory,
-     title:document.getElementById('issue-title').value,
-     desc:document.getElementById('issue-desc').value,
-     images:this.images,
+     title:issue-title.value,
+     desc:issue-desc.value,
      location:loc,
-     status:'Submitted',
+     images:this.images,
+     priority:getPriority(this.selectedCategory),
+     department:DEPARTMENTS[this.selectedCategory],
+     status:"Submitted",
      date:new Date().toLocaleDateString(),
-     history:[{status:'Submitted',date:new Date().toISOString()}]
+     history:[{
+       status:"Submitted",
+       date:new Date().toISOString()
+     }]
    };
 
    db.add(issue);
-   document.getElementById('success-tracking-id').innerText=issue.id;
 
+   success-tracking-id.innerText=issue.id;
+   showToast("Report submitted successfully");
    app.router.navigate('success');
-
-   e.target.reset();
-   this.images=[];
-   this.selectedCategory=null;
-   document.getElementById('preview-area').innerHTML='';
-   document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
  }
 };
 
-// ================= TRACK =================
+// ===================== TRACK =====================
 
 const TrackController={
  search(){
-   const id=document.getElementById('track-input').value.trim();
+   const id=track-input.value.trim();
    const issue=db.getById(id);
 
    if(!issue){
-     document.getElementById('track-error').classList.remove('hidden');
+     track-error.classList.remove('hidden');
      return;
    }
 
-   document.getElementById('track-error').classList.add('hidden');
-   document.getElementById('track-result').classList.remove('hidden');
+   track-error.classList.add('hidden');
+   track-result.classList.remove('hidden');
 
-   document.getElementById('track-result').innerHTML=`
-     <div class="card-action" style="text-align:left">
-       <h3>${issue.title}</h3>
-       <p><strong>Location:</strong> ${issue.location}</p>
-       <p><strong>Status:</strong> ${issue.status}</p>
-       <p>${issue.desc}</p>
-     </div>
-   `;
+   track-result.innerHTML=`
+    <div class="card-action" style="text-align:left">
+      <h3>${issue.title}</h3>
+      <p><b>Department:</b> ${issue.department}</p>
+      <p><b>Priority:</b> ${issue.priority}</p>
+      <p><b>Location:</b> ${issue.location}</p>
+      <p><b>Status:</b> ${issue.status}</p>
+
+      <h4 style="margin-top:10px">Timeline</h4>
+      ${issue.history.map(h=>`
+        <div>${new Date(h.date).toLocaleDateString()} - ${h.status}</div>
+      `).join('')}
+    </div>`;
  }
 };
 
-// ================= DASHBOARD =================
+// ===================== DASHBOARD =====================
 
 const DashboardController={
  load(){
-   if(!app.auth.user){ app.router.navigate('login'); return; }
+   if(!app.auth.user){app.router.navigate('login');return;}
    this.renderList();
  },
 
  renderList(){
-   const statusFilter=document.getElementById('filter-status').value;
-   const catFilter=document.getElementById('filter-category').value;
-
    let issues=db.getAll();
-
-   if(statusFilter!=='all')
-     issues=issues.filter(i=>i.status===statusFilter);
-
-   if(catFilter!=='all')
-     issues=issues.filter(i=>i.category===catFilter);
-
-   document.getElementById('dash-table-body').innerHTML=issues.map(i=>`
-     <tr>
-       <td>${i.id}</td>
-       <td>${CATEGORIES.find(c=>c.id===i.category)?.name}</td>
-       <td>${i.location}</td>
-       <td>${i.status}</td>
-       <td>
-       ${i.status!=='Resolved'
-        ?`<button class="btn-primary" onclick="app.controllers.dashboard.resolve('${i.id}')">Resolve</button>`
-        :'Done'}
-       </td>
-     </tr>
-   `).join('');
+   dash-table-body.innerHTML=issues.map(i=>`
+   <tr>
+     <td>${i.id}</td>
+     <td>${i.category}</td>
+     <td>${i.location}</td>
+     <td>${i.status}</td>
+     <td>
+      ${i.status!=="Resolved"
+       ?`<button onclick="app.controllers.dashboard.resolve('${i.id}')">Resolve</button>`
+       :"Done"}
+     </td>
+   </tr>`).join('');
  },
 
  resolve(id){
-   db.updateStatus(id,'Resolved');
+   db.updateStatus(id,"Resolved");
+   showToast("Issue marked resolved");
    this.renderList();
  }
 };
 
-// ================= ROUTER =================
+// ===================== ROUTER =====================
 
 const authService=new Auth();
 
@@ -268,46 +287,20 @@ const app={
  },
  router:{
    navigate(view){
-     document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
-     document.getElementById('view-'+view).classList.remove('hidden');
+     document.querySelectorAll('.view')
+       .forEach(v=>v.classList.add('hidden'));
+     document.getElementById('view-'+view)
+       .classList.remove('hidden');
 
-     if(view==='report') ReportController.init();
-     if(view==='dashboard') DashboardController.load();
-
+     if(view==="report") ReportController.init();
+     if(view==="dashboard") DashboardController.load();
      window.scrollTo(0,0);
    }
  }
 };
 
-// ================= INIT =================
+// ===================== INIT =====================
 
-document.addEventListener('DOMContentLoaded',()=>{
-
+document.addEventListener("DOMContentLoaded",()=>{
  app.router.navigate('home');
-
- // populate dashboard category filter
- const sel=document.getElementById('filter-category');
- if(sel){
-   CATEGORIES.forEach(c=>{
-     const o=document.createElement('option');
-     o.value=c.id;
-     o.innerText=c.name;
-     sel.appendChild(o);
-   });
- }
-
- // theme toggle
- const themeBtn=document.getElementById('theme-toggle');
- if(themeBtn){
-   themeBtn.addEventListener('click',()=>{
-     if(document.documentElement.getAttribute('data-theme')==='dark'){
-       document.documentElement.removeAttribute('data-theme');
-       themeBtn.innerText='🌙';
-     }else{
-       document.documentElement.setAttribute('data-theme','dark');
-       themeBtn.innerText='☀️';
-     }
-   });
- }
-
 });
