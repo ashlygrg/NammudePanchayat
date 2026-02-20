@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nammude Panchayat | Citizen Reporting</title>
 
-<!-- Google Font -->
+<!-- Font -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
 <!-- CSS -->
 <link rel="stylesheet" href="style.css">
-
-<!-- Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
 </head>
 
 <body>
@@ -47,13 +43,14 @@ Government of Kerala • Local Self Government Department • Citizen Service Po
 <!-- MAIN -->
 <main class="container">
 
-<!-- HOME -->
+<!-- ================= HOME ================= -->
 <section id="view-home" class="view active">
 <div class="hero-section">
 <h2>Welcome to Nammude Panchayat</h2>
 <p>Report issues, track status, and help build a better community.</p>
 
 <div class="hero-actions">
+
 <button class="card-action" onclick="app.router.navigate('report')">
 <span class="icon">📢</span>
 <h3>Report Issue</h3>
@@ -65,11 +62,12 @@ Government of Kerala • Local Self Government Department • Citizen Service Po
 <h3>Track Issue</h3>
 <p>Check the status of your submitted complaints.</p>
 </button>
+
 </div>
 </div>
 </section>
 
-<!-- REPORT -->
+<!-- ================= REPORT ================= -->
 <section id="view-report" class="view hidden">
 
 <div class="section-header">
@@ -87,7 +85,6 @@ Government of Kerala • Local Self Government Department • Citizen Service Po
 <div class="form-group">
 <label>Issue Title *</label>
 <input type="text" id="issue-title" maxlength="50" required>
-<div class="char-count"><span id="title-count">0</span>/50</div>
 </div>
 
 <div class="form-group">
@@ -100,9 +97,9 @@ Government of Kerala • Local Self Government Department • Citizen Service Po
 <input type="file" id="issue-photos" accept="image/*" multiple
 onchange="app.controllers.report.handleFiles(this)">
 <div id="preview-area" class="preview-grid"></div>
-<div id="photo-count">0/3 images</div>
 </div>
 
+<!-- LOCATION + MAP -->
 <div class="form-group">
 <label>Location *</label>
 
@@ -113,7 +110,11 @@ onclick="app.controllers.report.detectLocation()">
 
 <p id="detected-address">No location detected yet.</p>
 
-<div id="map" style="height:220px;border-radius:14px;margin-top:10px;"></div>
+<!-- MAP CONTAINER -->
+<div id="map"
+style="height:220px;border-radius:14px;margin-top:10px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;">
+<span style="color:#64748b">Map preview will appear here</span>
+</div>
 
 <input type="hidden" id="final-location" required>
 </div>
@@ -123,33 +124,36 @@ onclick="app.controllers.report.detectLocation()">
 </form>
 </section>
 
-<!-- SUCCESS -->
+<!-- ================= SUCCESS ================= -->
 <section id="view-success" class="view hidden centered-view">
+
 <div class="success-card">
 <div class="success-icon">✅</div>
+
 <h2>Report Submitted Successfully!</h2>
 <p>Your tracking ID:</p>
+
 <h1 id="success-tracking-id">PTH-XXXX</h1>
 
 <div style="margin-top:1.5rem;">
 <button class="btn-primary" onclick="app.router.navigate('track')">Track Issue</button>
 <button class="btn-secondary" onclick="app.router.navigate('home')">Return Home</button>
 </div>
+
 </div>
 </section>
 
-<!-- TRACK -->
+<!-- ================= TRACK ================= -->
 <section id="view-track" class="view hidden">
+
 <div class="section-header">
 <button class="btn-back" onclick="app.router.navigate('home')">← Back</button>
 <h2>Track Your Issue</h2>
 </div>
 
 <div class="search-box">
-<input type="text" id="track-input"
-placeholder="Enter Tracking ID (Example: PTH-345921)">
-<button class="btn-primary"
-onclick="app.controllers.track.search()">Track</button>
+<input type="text" id="track-input" placeholder="Enter Tracking ID (Example: PTH-123456)">
+<button class="btn-primary" onclick="app.controllers.track.search()">Track</button>
 </div>
 
 <div id="track-result" class="track-result hidden"></div>
@@ -157,10 +161,12 @@ onclick="app.controllers.track.search()">Track</button>
 <div id="track-error" class="error-msg hidden">
 ❌ Tracking ID not found. Please check and try again.
 </div>
+
 </section>
 
-<!-- LOGIN -->
+<!-- ================= LOGIN ================= -->
 <section id="view-login" class="view hidden centered-view">
+
 <div class="auth-card">
 <h2>Admin Login</h2>
 
@@ -178,13 +184,15 @@ onclick="app.controllers.track.search()">Track</button>
 <button type="submit" class="btn-primary btn-block">Login</button>
 </form>
 
-<button class="btn-link mt-2" onclick="app.router.navigate('home')">
+<button class="btn-link mt-2"
+onclick="app.router.navigate('home')">
 Back to Public Home
 </button>
+
 </div>
 </section>
 
-<!-- DASHBOARD -->
+<!-- ================= DASHBOARD ================= -->
 <section id="view-dashboard" class="view hidden">
 
 <header class="dash-header">
@@ -197,22 +205,6 @@ onclick="app.controllers.auth.logout()">Logout</button>
 </header>
 
 <div class="stats-grid" id="dash-stats"></div>
-
-<div class="filters">
-
-<select id="filter-status"
-onchange="app.controllers.dashboard.renderList()">
-<option value="all">All Status</option>
-<option value="Submitted">Submitted</option>
-<option value="Resolved">Resolved</option>
-</select>
-
-<select id="filter-category"
-onchange="app.controllers.dashboard.renderList()">
-<option value="all">All Categories</option>
-</select>
-
-</div>
 
 <div class="table-responsive">
 <table class="data-table">
@@ -233,10 +225,12 @@ onchange="app.controllers.dashboard.renderList()">
 
 </main>
 
+<!-- FOOTER -->
 <footer class="main-footer">
 <p>© 2026 Nammude Panchayat • Government of Kerala</p>
 </footer>
 
+<!-- JS -->
 <script src="app.js"></script>
 
 </body>
